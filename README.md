@@ -1,0 +1,1 @@
+# sw_git_hratky1
