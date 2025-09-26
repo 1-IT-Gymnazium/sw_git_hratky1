@@ -1,37 +1,47 @@
 let users = new Map()
 let roles = new Map([
-    ["admin", ["read", "write", "delete", "manage_users"]],
-    ["editor", ["read", "write"]],
-    ["viewer", ["read"]]
+    ["admin", { permissions: ["delete", "manage_users"], parent: "editor" }],
+    ["editor", { permissions: ["write"], parent: "viewer" }],
+    ["viewer", { permissions: ["read"], parent: null }]
 ])
 
 function createUser(username, password, role = "viewer") {
     if (users.has(username)) {
         console.log("User už existuje.")
-	console.log("--------")
-//        return false
+        console.log("--------")
+        return false
     }
     users.set(username, { password, role })
     console.log("User vytvořen.")
     console.log("--------")
-//    return true
+    return true
+}
+
+function getRolePermissions(role) {
+    let perms = new Set()
+    while (role && roles.has(role)) {
+        let { permissions, parent } = roles.get(role)
+        permissions.forEach(p => perms.add(p))
+        role = parent
+    }
+    return [...perms]
 }
 
 function authenticateUser(username, password) {
     if (!users.has(username)) {
         console.log("Uživatel neexistuje.")
-//        return false
+        return false
     }
     let user = users.get(username)
     if (user.password === password) {
-        console.log("Přihlášení úspěšné.")
-	console.log("Permise:", roles.get(user.role))
-	console.log("--------")
-//        return true
+        console.log("✅ Přihlášení úspěšné.")
+        console.log("Permise:", getRolePermissions(user.role))
+        console.log("--------")
+        return true
     } else {
-        console.log("Nesprávné heslo.")
-	console.log("--------")
-//        return false
+        console.log("❌ Nesprávné heslo.")
+        console.log("--------")
+        return false
     }
 }
 
@@ -51,8 +61,8 @@ function count_active_users() {
 
 function get_all_permissions() {
     let perms = new Set()
-    for (let p of roles.values()) {
-        p.forEach(x => perms.add(x))
+    for (let role of roles.keys()) {
+        getRolePermissions(role).forEach(p => perms.add(p))
     }
     return [...perms]
 }
@@ -60,19 +70,20 @@ function get_all_permissions() {
 function has_write_access(username) {
     if (!users.has(username)) return false
     let role = users.get(username).role
-    let perms = roles.get(role) || []
+    let perms = getRolePermissions(role)
     return perms.includes("write")
 }
 
+// --- Testy ---
 createUser("user", "user")
 createUser("adminka7", "admin123", "admin")
 authenticateUser("adminka7", "admin")
-authenticateUser ("user", "user")
-authenticateUser ("adminka7", "admin123")
+authenticateUser("user", "user")
+authenticateUser("adminka7", "admin123")
+
 console.log(users)
 console.log("----------------------------------------")
 console.log(getUsersByRole("admin"))
-
 console.log(count_active_users())         
 console.log(get_all_permissions())        
 console.log(has_write_access("adminka7"))    
